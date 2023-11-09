@@ -1,9 +1,11 @@
 import { Context, Hono } from 'hono';
+import { logger } from 'hono/logger'
 import { renderer } from './renderer';
 
 const app = new Hono();
 
 app.get('*', renderer);
+app.use('*', logger())
 
 app.get('/', async (c) => {
   return c.render(
