@@ -1,4 +1,45 @@
 h1 { font-family: Arial, Helvetica, sans-serif; }
+
+.container {
+  display: flex;
+}
+
+body {
+  background: blue;
+  background: url(/static/mario-bg.png);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+@media (max-width: 1250px) {
+  .container {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.text-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: rgba(75, 125, 251, .9);
+  color: #f2f2f2;
+  border-radius: 1rem;
+  border: solid 1px #f2f2f2;
+}
+
 .center {
   text-align: center;
+}
+
+.joe-photo {
+  max-width: 300px;
+  max-height: 300px;
+  animation: wiggle 1s infinite;
+}
+
+@keyframes wiggle {
+  0%{transform:rotate(3deg);}
+  50%{transform:rotate(-3deg);}
+  100%{transform:rotate(3deg);}
 }
