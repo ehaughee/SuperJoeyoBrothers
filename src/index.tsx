@@ -16,10 +16,14 @@ app.use('*', logger())
 
 app.get('/', async (c) => {
   return c.render(
-    <>
+    <div class="container"> 
+      <img class="joe-photo" src="/static/baby-joe-head-red.png" />
+      <div class="text-container">
       <h1 class="center">Joey has watched the Super Mario Brothers movie {await getWatchCount()} times</h1>
       <h1 class="center">Is he watching it right now? {await getWatching()}</h1>
-    </>
+      </div>
+      <img class="joe-photo" src="/static/baby-joe-head-green.png" />
+    </div>
   );
 });
 
