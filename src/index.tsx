@@ -47,7 +47,7 @@ const getWatching = async () => {
   const data = await resp.json() as { 'response': { 'data': { "sessions": [] }}};
   console.dir(data);
   for (const session of data['response']['data']['sessions']) {
-    if (session['user_id'] == userId) {
+    if (session['user_id'] == userId && session['rating_key'] == movieId) {
       return "Yes";
     }
   }
