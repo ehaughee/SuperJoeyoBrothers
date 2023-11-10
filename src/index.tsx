@@ -24,7 +24,6 @@ app.get('/', async (c) => {
 });
 
 const getWatchCount = async () => {
-  // https://tautulli.haughee.wtf/api/v2?apikey=yourapikeyhere&cmd=get_item_user_stats&rating_key=8789
   const fullUrl = `${baseUrl}?apikey=${apiKey}&cmd=${itemUserStatsCmd}&rating_key=${movieId}`
 
   const resp = await fetch(fullUrl);
@@ -38,10 +37,6 @@ const getWatchCount = async () => {
 };
 
 const getWatching = async () => {
-  // { "sessions": [{
-  //   {"user_id": 888 }
-  // }]}
-
   const fullUrl = `${baseUrl}?apikey=${apiKey}&cmd=${activityCmd}`;
   const resp = await fetch(fullUrl);
   const data = await resp.json() as { 'response': { 'data': { "sessions": [] }}};
