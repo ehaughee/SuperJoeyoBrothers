@@ -40,7 +40,7 @@ const getWatching = async () => {
   const fullUrl = `${baseUrl}?apikey=${apiKey}&cmd=${activityCmd}`;
   const resp = await fetch(fullUrl);
   const data = await resp.json() as { 'response': { 'data': { "sessions": [] }}};
-  console.dir(data);
+
   for (const session of data['response']['data']['sessions']) {
     if (session['user_id'] == userId && session['rating_key'] == movieId) {
       return "Yes";
