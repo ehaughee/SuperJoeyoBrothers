@@ -1,10 +1,10 @@
 ```shell
 # Local dev
 cat > .env << EOF
-TAUTULLI_API_KEY=
-TAUTULLI_BASE_URL=
-JOEY_USER_ID=
-MOVIE_ID=
+VITE_TAUTULLI_API_KEY=
+VITE_TAUTULLI_BASE_URL=
+VITE_JOEY_USER_ID=
+VITE_MOVIE_IDS= # Tautulli rating_keys: 1234,5678
 EOF
 
 npm install
