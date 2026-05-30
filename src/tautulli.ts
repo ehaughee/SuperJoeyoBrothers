@@ -13,8 +13,8 @@ const config = {
         .filter(g => g.length > 0),
 } as const;
 
-export const EDGE_CACHE_TTL = 60;
-const CACHE_TTL = 60;
+export const EDGE_CACHE_TTL = 60;  // browser/CDN cache for JSON API (seconds)
+const CACHE_TTL = 900;              // KV cache TTL — 15 min keeps writes under 1k/day
 
 /** Fields we care about from the Tautulli API */
 export interface MovieStats {
