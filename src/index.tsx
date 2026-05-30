@@ -25,7 +25,7 @@ function Page({ movies }: { movies: MovieStats[] }) {
   return (
     <html lang="en">
       <head>
-        <style>{`body{font-family:Arial,Helvetica,sans-serif}.container{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:2rem;padding:2rem 1rem}body{background:blue;background:url(/static/mario-bg.webp);background-repeat:no-repeat;background-size:cover}@media(max-width:1250px){.container{flex-direction:column;gap:1rem}}.middle-column{display:flex;flex-direction:column;align-items:stretch;gap:1.5rem;width:min(100%,540px)}.movie-card{width:100%}.text-container{display:flex;flex-direction:column;justify-content:center;background:rgba(75,125,251,.9);color:#f2f2f2;border-radius:1rem;border:solid 1px #f2f2f2;padding:1rem}.dv{color:#f9be03;font-weight:600}.movie-card p{margin:.3rem 0;font-size:1.1em;font-weight:bold}.movie-card.current p{font-size:1.4em}.center{text-align:center}`}</style>
+        <link href="/static/style.css" rel="stylesheet" />
         <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
         <title>Joey Movie Tracker</title>
       </head>
