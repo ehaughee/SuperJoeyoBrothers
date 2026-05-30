@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { getCachedMovies, EDGE_CACHE_TTL, type MovieStats } from './tautulli';
+import { logger } from './logger';
 
 const app = new Hono();
 
@@ -45,7 +46,7 @@ app.get('/', async (c) => {
       {movies.map((movie, i) => <MovieCard movie={movie} current={i === 0} key={movie.movieId} />)}
     </Layout>
   );
-  console.log({ route: '/', movies: movies.length, duration_ms: Date.now() - start });
+  logger.info('page_rendered', { movies: movies.length, duration_ms: Date.now() - start });
   return html;
 });
 
@@ -56,7 +57,7 @@ app.get('/api/movies', async (c) => {
   const movies = await getCachedMovies(c.env);
   c.header('Cache-Control', `public, max-age=0, s-maxage=${EDGE_CACHE_TTL}, stale-while-revalidate=60`);
   c.header('Cloudflare-CDN-Cache-Control', `max-age=${EDGE_CACHE_TTL}, stale-while-revalidate=60`);
-  console.log({ route: '/api/movies', movies: movies.length, duration_ms: Date.now() - start });
+  logger.info('api_response', { movies: movies.length, duration_ms: Date.now() - start });
   return c.json(movies);
 });
 

@@ -3,6 +3,8 @@
 // MOVIE_IDS format: comma-separated groups, pipe-separated IDs within a group
 //   e.g. "83162,8789|63120" = two movies, second combines old+new rating keys
 
+import { logger } from './logger';
+
 const config = {
     apiKey: import.meta.env.VITE_TAUTULLI_API_KEY,
     baseUrl: import.meta.env.VITE_TAUTULLI_BASE_URL,
@@ -35,8 +37,8 @@ async function call(cmd: string, params: Record<string, string> = {}) {
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
     const res = await fetch(url.toString());
     const data = await res.json() as any;
-    console.log({
-        tautulli: cmd,
+    logger.info('tautulli_api', {
+        cmd,
         status: res.status,
         duration_ms: Date.now() - start,
         ...Object.fromEntries(Object.entries(params).filter(([k]) => k !== 'apikey')),
@@ -54,12 +56,12 @@ async function cachedCall(kv: any, cmd: string, params: Record<string, string> =
             const kvStart = Date.now();
             const cached = await kv.get(key);
             if (cached) {
-                console.log({ cache: 'hit', key, kv_read_ms: Date.now() - kvStart });
+                logger.info('cache_hit', { key, kv_read_ms: Date.now() - kvStart });
                 return JSON.parse(cached);
             }
-            console.log({ cache: 'miss', key });
+            logger.info('cache_miss', { key });
         } catch (e: any) {
-            console.log({ error: 'kv_read', key, message: e?.message });
+            logger.error('kv_read_error', { key, error: e?.message });
         }
     }
 
@@ -69,7 +71,7 @@ async function cachedCall(kv: any, cmd: string, params: Record<string, string> =
         try {
             await kv.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
         } catch (e: any) {
-            console.log({ error: 'kv_write', key, message: e?.message });
+            logger.error('kv_write_error', { key, error: e?.message });
         }
     }
 
@@ -151,6 +153,6 @@ export async function getCachedMovies(env: any): Promise<MovieStats[]> {
             lastWatched: latestDate ? relativeTime(latestDate) : 'never',
         } satisfies MovieStats;
     }));
-    console.log({ movies_loaded: movies.length, duration_ms: Date.now() - start });
+    logger.info('movies_loaded', { count: movies.length, duration_ms: Date.now() - start });
     return movies;
 }
