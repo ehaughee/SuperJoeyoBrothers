@@ -27,12 +27,14 @@ function Page({ movies }: { movies: MovieStats[] }) {
       <head>
         <link href="/static/style.css" rel="stylesheet" />
         <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+        <link rel="preload" href="/static/baby-joe-head-red.webp" as="image" />
+        <link rel="preload" href="/static/baby-joe-head-green.webp" as="image" />
+        <link rel="preload" href="/static/mario-bg.webp" as="image" />
         <title>Joey Movie Tracker</title>
       </head>
       <body>
         <main class="page-wrapper">
           <div class="container">
-            <link rel="preload" href="/static/baby-joe-head-red.webp" as="image" />
             <img class="joe-photo" src="/static/baby-joe-head-red.webp" alt="Joey" width="300" height="300" fetchpriority="high" />
             <div class="middle-column">
               {movies.map((movie, i) => <MovieCard movie={movie} current={i === 0} key={movie.movieId} />)}

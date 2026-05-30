@@ -3,10 +3,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "postbuild": "esbuild dist/static/client.js --minify --allow-overwrite --outfile=dist/static/client.js & esbuild dist/static/style.css --minify --allow-overwrite --outfile=dist/static/style.css",
     "preview": "npm run build && wrangler pages dev dist",
-    "deploy": "npm run build && wrangler pages deploy dist",
-    "deploy:preview": "npm run build && wrangler pages deploy dist --branch=preview"
+    "deploy": "npm run build && esbuild dist/static/client.js dist/static/style.css --minify --outdir=dist/static --allow-overwrite && wrangler pages deploy dist",
+    "deploy:preview": "npm run build && esbuild dist/static/client.js dist/static/style.css --minify --outdir=dist/static --allow-overwrite && wrangler pages deploy dist --branch=preview"
   },
   "dependencies": {
     "hono": "^4.12.23"
