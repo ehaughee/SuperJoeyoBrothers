@@ -10,3 +10,6 @@ id = "f4b61ecb518240eea88d57ca33cece95"
 [vars]
 VITE_JOEY_USER_ID = "98743343"
 VITE_MOVIE_IDS = "83162,8789"
+
+[observability]
+enabled = true

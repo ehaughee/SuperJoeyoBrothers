@@ -43,8 +43,8 @@ async function cachedCall(kv: any, cmd: string, params: Record<string, string> =
     if (kv) {
         try {
             const cached = await kv.get(key);
-            if (cached) { console.log(`[CACHE HIT] ${key}`); return JSON.parse(cached); }
-            console.log(`[CACHE MISS] ${key}`);
+            if (cached) { console.log({ cache: 'hit', key }); return JSON.parse(cached); }
+            console.log({ cache: 'miss', key });
         } catch { /* fall through */ }
     }
 
