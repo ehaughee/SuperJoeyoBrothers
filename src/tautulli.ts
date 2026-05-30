@@ -1,12 +1,16 @@
 // Tautulli API client + KV caching for movie stats
 // Config from VITE_* env vars (set in .env for local, dashboard secrets for deploy)
+// MOVIE_IDS format: comma-separated groups, pipe-separated IDs within a group
+//   e.g. "83162,8789|63120" = two movies, second combines old+new rating keys
 
 const config = {
     apiKey: import.meta.env.VITE_TAUTULLI_API_KEY,
     baseUrl: import.meta.env.VITE_TAUTULLI_BASE_URL,
     userId: import.meta.env.VITE_JOEY_USER_ID,
-    movieIds: (import.meta.env.VITE_MOVIE_IDS ?? '')
-        .split(',').map((s: string) => s.trim()).filter(Boolean),
+    movieGroups: (import.meta.env.VITE_MOVIE_IDS ?? '')
+        .split(',')
+        .map(g => g.split('|').map(s => s.trim()).filter(Boolean))
+        .filter(g => g.length > 0),
 } as const;
 
 export const EDGE_CACHE_TTL = 60;
@@ -62,39 +66,69 @@ function relativeTime(ts: number) {
     return `${Math.floor(s / 2592000)}mo ago`;
 }
 
-/** Assemble MovieStats from cached (or fresh) Tautulli API responses */
+/** Assemble MovieStats from cached (or fresh) Tautulli API responses.
+ *  Each movieGroup is one or more rating_keys for the same film. */
 export async function getCachedMovies(env: any): Promise<MovieStats[]> {
     const kv = env?.MOVIE_CACHE;
+    const uId = Number(config.userId);
 
-    return Promise.all(config.movieIds.map(async (id: string) => {
-        const [rawMeta, stats, activity, history] = await Promise.all([
-            cachedCall(kv, 'get_metadata', { rating_key: id }),
-            cachedCall(kv, 'get_item_user_stats', { rating_key: id }),
-            cachedCall(kv, 'get_activity'),
-            cachedCall(kv, 'get_history', { rating_key: id, user_id: config.userId, length: '1' }),
-        ]);
+    return Promise.all(config.movieGroups.map(async (ids: string[]) => {
+        const primaryId = ids[0];
+        const allIds = ids;
 
+        // Metadata: use primary ID
+        const rawMeta = await cachedCall(kv, 'get_metadata', { rating_key: primaryId });
         const meta = rawMeta?.response?.data;
-        const uId = Number(config.userId);
 
-        // Title: try metadata first, then history (any user), fall back to ID
+        // Activity: check all IDs
+        const activity = await cachedCall(kv, 'get_activity');
+
+        // Watch count: sum across all IDs
+        let totalPlays = 0;
+        for (const id of allIds) {
+            const stats = await cachedCall(kv, 'get_item_user_stats', { rating_key: id });
+            const userPlays = stats?.response?.data?.find((u: any) => u?.user_id === uId)?.total_plays ?? 0;
+            totalPlays += Number(userPlays);
+        }
+
+        // Last watched: most recent date from any ID (user-filtered first, then unfiltered)
+        let latestDate = 0;
+        for (const id of allIds) {
+            const hist = await cachedCall(kv, 'get_history', {
+                rating_key: id, user_id: config.userId,
+                length: '1', order_column: 'date', order_dir: 'desc',
+            });
+            const d = hist?.response?.data?.data?.[0]?.date ?? hist?.response?.data?.history?.[0]?.date;
+            if (d > latestDate) latestDate = d;
+        }
+        // If user-filtered found nothing, try unfiltered across all IDs
+        if (latestDate === 0) {
+            for (const id of allIds) {
+                const hist = await cachedCall(kv, 'get_history', {
+                    rating_key: id, length: '1',
+                    order_column: 'date', order_dir: 'desc',
+                });
+                const d = hist?.response?.data?.data?.[0]?.date ?? hist?.response?.data?.history?.[0]?.date;
+                if (d > latestDate) latestDate = d;
+            }
+        }
+
+        // Title: try metadata first, then history fallback
         let title = meta?.title ?? meta?.full_title;
         if (!title) {
-            const histData = await cachedCall(kv, 'get_history', { rating_key: id, length: '1' });
+            const histData = await cachedCall(kv, 'get_history', { rating_key: primaryId, length: '1' });
             const entry = histData?.response?.data?.data?.[0] ?? histData?.response?.data?.history?.[0];
-            title = entry?.title ?? `Movie ${id}`;
+            title = entry?.title ?? `Movie ${primaryId}`;
         }
 
         return {
-            movieId: id,
+            movieId: primaryId,
             title,
-            watchCount: String(stats?.response?.data?.find((u: any) => u?.user_id === uId)?.total_plays ?? '0'),
+            watchCount: String(totalPlays),
             watching: activity?.response?.data?.sessions?.some(
-                (s: any) => String(s?.user_id) === String(uId) && String(s?.rating_key) === id
+                (s: any) => String(s?.user_id) === String(uId) && allIds.includes(String(s?.rating_key))
             ) ? 'Yes' : 'No',
-            lastWatched: relativeTime(
-                (history?.response?.data?.data?.[0] ?? history?.response?.data?.history?.[0])?.date ?? 0
-            ),
+            lastWatched: latestDate ? relativeTime(latestDate) : 'never',
         } satisfies MovieStats;
     }));
 }
