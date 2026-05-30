@@ -30,7 +30,7 @@ body {
   flex-direction: column;
   align-items: stretch;
   gap: 1.5rem;
-  width: min(100%, 540px);
+  width: min(100%, 450px);
 }
 
 .movie-card {

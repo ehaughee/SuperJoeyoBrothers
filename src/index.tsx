@@ -67,8 +67,9 @@ function MovieCard({ movie, current }: { movie: MovieStats; current: boolean }) 
   const label = current ? 'Joey is now binge watching' : 'Joey used to binge watch';
   return (
     <div class={"movie-card text-container" + (current ? " current" : "")} data-movie-id={movie.movieId}>
-      <p>{label} <span class="dv" data-field="title">{movie.title}</span></p>
-      <p>and has seen it <span class="dv" data-field="count">{movie.watchCount}</span> times</p>
+      <p class="center">{label}</p>
+      <p class="center"><span class="dv" data-field="title">{movie.title}</span></p>
+      <p class="center">and has seen it <span class="dv" data-field="count">{movie.watchCount}</span> times</p>
       <p class="center">
         {current ? (
           <>Is he watching it right now? <span class="dv" data-field="watching">{movie.watching}</span></>
