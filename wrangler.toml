@@ -1,0 +1,8 @@
+name = "superjoeyobrothers"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-05-30"
+
+[[kv_namespaces]]
+binding = "MOVIE_CACHE"
+preview_id = "99f8eeec287a4af1b333ed9c23e2d35a"
+id = "f4b61ecb518240eea88d57ca33cece95"
