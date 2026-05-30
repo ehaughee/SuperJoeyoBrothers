@@ -38,20 +38,25 @@ function Layout(props: { children?: unknown }) {
 // ── Server-rendered page ──────────────────────────────────────────
 
 app.get('/', async (c) => {
+  const start = Date.now();
   const movies = await getCachedMovies(c.env);
-  return c.html(
+  const html = c.html(
     <Layout>
       {movies.map((movie, i) => <MovieCard movie={movie} current={i === 0} key={movie.movieId} />)}
     </Layout>
   );
+  console.log({ route: '/', movies: movies.length, duration_ms: Date.now() - start });
+  return html;
 });
 
 // ── JSON API (public, edge-cached) ────────────────────────────────
 
 app.get('/api/movies', async (c) => {
+  const start = Date.now();
   const movies = await getCachedMovies(c.env);
   c.header('Cache-Control', `public, max-age=0, s-maxage=${EDGE_CACHE_TTL}, stale-while-revalidate=60`);
   c.header('Cloudflare-CDN-Cache-Control', `max-age=${EDGE_CACHE_TTL}, stale-while-revalidate=60`);
+  console.log({ route: '/api/movies', movies: movies.length, duration_ms: Date.now() - start });
   return c.json(movies);
 });
 

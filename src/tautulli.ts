@@ -28,11 +28,20 @@ export interface MovieStats {
 // ── Raw Tautulli API call ─────────────────────────────────────────
 
 async function call(cmd: string, params: Record<string, string> = {}) {
+    const start = Date.now();
     const url = new URL(config.baseUrl);
     url.searchParams.set('apikey', config.apiKey);
     url.searchParams.set('cmd', cmd);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-    return fetch(url.toString()).then(r => r.json()) as any;
+    const res = await fetch(url.toString());
+    const data = await res.json() as any;
+    console.log({
+        tautulli: cmd,
+        status: res.status,
+        duration_ms: Date.now() - start,
+        ...Object.fromEntries(Object.entries(params).filter(([k]) => k !== 'apikey')),
+    });
+    return data;
 }
 
 /** Same as call() but caches the raw response in KV keyed by cmd+params */
@@ -42,16 +51,26 @@ async function cachedCall(kv: any, cmd: string, params: Record<string, string> =
 
     if (kv) {
         try {
+            const kvStart = Date.now();
             const cached = await kv.get(key);
-            if (cached) { console.log({ cache: 'hit', key }); return JSON.parse(cached); }
+            if (cached) {
+                console.log({ cache: 'hit', key, kv_read_ms: Date.now() - kvStart });
+                return JSON.parse(cached);
+            }
             console.log({ cache: 'miss', key });
-        } catch { /* fall through */ }
+        } catch (e: any) {
+            console.log({ error: 'kv_read', key, message: e?.message });
+        }
     }
 
     const data = await call(cmd, params);
 
     if (kv) {
-        try { await kv.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL }); } catch { }
+        try {
+            await kv.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
+        } catch (e: any) {
+            console.log({ error: 'kv_write', key, message: e?.message });
+        }
     }
 
     return data;
@@ -72,7 +91,8 @@ export async function getCachedMovies(env: any): Promise<MovieStats[]> {
     const kv = env?.MOVIE_CACHE;
     const uId = Number(config.userId);
 
-    return Promise.all(config.movieGroups.map(async (ids: string[]) => {
+    const start = Date.now();
+    const movies = await Promise.all(config.movieGroups.map(async (ids: string[]) => {
         const primaryId = ids[0];
         const allIds = ids;
 
@@ -131,4 +151,6 @@ export async function getCachedMovies(env: any): Promise<MovieStats[]> {
             lastWatched: latestDate ? relativeTime(latestDate) : 'never',
         } satisfies MovieStats;
     }));
+    console.log({ movies_loaded: movies.length, duration_ms: Date.now() - start });
+    return movies;
 }

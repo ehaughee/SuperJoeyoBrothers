@@ -13,3 +13,4 @@ VITE_MOVIE_IDS = "83162,8789"
 
 [observability]
 enabled = true
+head_sampling_rate = 1
