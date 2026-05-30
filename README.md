@@ -8,10 +8,13 @@ VITE_MOVIE_IDS= # Tautulli rating_keys: 1234,5678
 EOF
 
 npm install
-npm run dev
+npm run preview
 ```
 
 ```shell
-# Deploy
+# Deploy preview
+npm run deploy:preview
+
+# Deploy prod
 npm run deploy
 ```

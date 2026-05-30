@@ -1,22 +1,19 @@
 import { Hono } from 'hono';
-import { getMovie, MOVIE_IDS, EDGE_CACHE_TTL, type MovieStats } from './tautulli';
+import { getCachedMovies, EDGE_CACHE_TTL, type MovieStats } from './tautulli';
 
 const app = new Hono();
-
-// Shared helper to fetch all movie stats
-const fetchAll = (env: any) => Promise.all(MOVIE_IDS.map((id: string) => getMovie(id, env)));
 
 // ── Server-rendered page ──────────────────────────────────────────
 
 app.get('/', async (c) => {
-  const movies = await fetchAll(c.env);
+  const movies = await getCachedMovies(c.env);
   return c.html(<Page movies={movies} />);
 });
 
 // ── JSON API (public, edge-cached) ────────────────────────────────
 
 app.get('/api/movies', async (c) => {
-  const movies = await fetchAll(c.env);
+  const movies = await getCachedMovies(c.env);
   c.header('Cache-Control', `public, max-age=0, s-maxage=${EDGE_CACHE_TTL}, stale-while-revalidate=60`);
   c.header('Cloudflare-CDN-Cache-Control', `max-age=${EDGE_CACHE_TTL}, stale-while-revalidate=60`);
   return c.json(movies);

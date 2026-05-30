@@ -6,3 +6,7 @@ compatibility_date = "2026-05-30"
 binding = "MOVIE_CACHE"
 preview_id = "99f8eeec287a4af1b333ed9c23e2d35a"
 id = "f4b61ecb518240eea88d57ca33cece95"
+
+[vars]
+VITE_JOEY_USER_ID = "98743343"
+VITE_MOVIE_IDS = "83162,8789"

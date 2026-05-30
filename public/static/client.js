@@ -1,14 +1,17 @@
 // Fetches fresh movie stats and updates the dynamic values in place.
 // Static text ("Joey watched", "times", etc.) lives in the HTML — only the
 // <span class="dv" data-field="..."> elements get replaced.
-(async () => {
+// Polls every 60s for fresh data.
+
+/** @type {Array<{movieId: string, title: string, watchCount: string, watching: string, lastWatched: string}>} */
+let lastMovies = [];
+
+async function updateMovies() {
     try {
         const res = await fetch('/api/movies');
         if (!res.ok) return;
-
-        /** @type {Array<{movieId: string, title: string, watchCount: string, watching: string, lastWatched: string}>} */
-        const movies = await res.json();
-        for (const m of movies) {
+        lastMovies = await res.json();
+        for (const m of lastMovies) {
             const card = document.querySelector(`[data-movie-id="${m.movieId}"]`);
             if (!card) continue;
 
@@ -25,5 +28,8 @@
         // SSR already shows data; silently ignore fetch failures
         console.error(`failed to fetch movies with error: ${err}`)
     }
-})();
+}
+
+updateMovies();
+setInterval(updateMovies, 60000);
 
