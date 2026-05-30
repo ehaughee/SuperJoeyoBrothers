@@ -1,13 +1,49 @@
 import { Hono } from 'hono';
+import { html } from 'hono/html';
 import { getCachedMovies, EDGE_CACHE_TTL, type MovieStats } from './tautulli';
 
 const app = new Hono();
+
+// ── Layout ────────────────────────────────────────────────────────
+
+function Layout(props: { children?: unknown }) {
+  return html`<!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content="SEO is stupid" />
+        <link rel="preload" href="/static/style.css" as="style" />
+        <link rel="stylesheet" href="/static/style.css" />
+        <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+        <link rel="preload" href="/static/baby-joe-head-red.webp" as="image" fetchpriority="high" />
+        <link rel="preload" href="/static/baby-joe-head-green.webp" as="image" fetchpriority="high" />
+        <title>Joey Movie Tracker</title>
+      </head>
+      <body>
+        <main class="page-wrapper">
+          <div class="container">
+            <img class="joe-photo" src="/static/baby-joe-head-red.webp" alt="Joey" width="300" height="300" decoding="async" />
+            <div class="middle-column">
+              ${props.children}
+            </div>
+            <img class="joe-photo" src="/static/baby-joe-head-green.webp" alt="" width="300" height="300" decoding="async" />
+          </div>
+        </main>
+        <script src="/static/client.js" defer></script>
+      </body>
+    </html>`;
+}
 
 // ── Server-rendered page ──────────────────────────────────────────
 
 app.get('/', async (c) => {
   const movies = await getCachedMovies(c.env);
-  return c.html(<Page movies={movies} />);
+  return c.html(
+    <Layout>
+      {movies.map((movie, i) => <MovieCard movie={movie} current={i === 0} key={movie.movieId} />)}
+    </Layout>
+  );
 });
 
 // ── JSON API (public, edge-cached) ────────────────────────────────
@@ -19,40 +55,20 @@ app.get('/api/movies', async (c) => {
   return c.json(movies);
 });
 
-// ── JSX templates ─────────────────────────────────────────────────
+// ── robots.txt ────────────────────────────────────────────────────
 
-function Page({ movies }: { movies: MovieStats[] }) {
-  return (
-    <html lang="en">
-      <head>
-        <link href="/static/style.css" rel="stylesheet" />
-        <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
-        <link rel="preload" href="/static/baby-joe-head-red.webp" as="image" />
-        <link rel="preload" href="/static/baby-joe-head-green.webp" as="image" />
-        <link rel="preload" href="/static/mario-bg.webp" as="image" />
-        <title>Joey Movie Tracker</title>
-      </head>
-      <body>
-        <main class="page-wrapper">
-          <div class="container">
-            <img class="joe-photo" src="/static/baby-joe-head-red.webp" alt="Joey" width="300" height="300" fetchpriority="high" />
-            <div class="middle-column">
-              {movies.map((movie, i) => <MovieCard movie={movie} current={i === 0} key={movie.movieId} />)}
-            </div>
-            <img class="joe-photo" src="/static/baby-joe-head-green.webp" alt="" width="300" height="300" />
-          </div>
-        </main>
-        <script src="/static/client.js"></script>
-      </body>
-    </html>
-  );
-}
+app.get('/robots.txt', (c) => {
+  return c.text('User-agent: *\nAllow: /\n');
+});
+
+// ── Movie card component ──────────────────────────────────────────
 
 function MovieCard({ movie, current }: { movie: MovieStats; current: boolean }) {
   const label = current ? 'Joey is now binge watching' : 'Joey used to binge watch';
   return (
     <div class={"movie-card text-container" + (current ? " current" : "")} data-movie-id={movie.movieId}>
-      <p>{label} <span class="dv" data-field="title">{movie.title}</span> and has seen it <span class="dv" data-field="count">{movie.watchCount}</span> times</p>
+      <p>{label} <span class="dv" data-field="title">{movie.title}</span></p>
+      <p>and has seen it <span class="dv" data-field="count">{movie.watchCount}</span> times</p>
       <p class="center">
         {current ? (
           <>Is he watching it right now? <span class="dv" data-field="watching">{movie.watching}</span></>
