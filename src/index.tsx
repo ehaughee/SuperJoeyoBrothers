@@ -23,22 +23,22 @@ app.get('/api/movies', async (c) => {
 
 function Page({ movies }: { movies: MovieStats[] }) {
   return (
-    <html>
+    <html lang="en">
       <head>
         <link href="/static/style.css" rel="stylesheet" />
         <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
         <title>Joey Movie Tracker</title>
       </head>
       <body>
-        <div class="page-wrapper">
+        <main class="page-wrapper">
           <div class="container">
-            <img class="joe-photo" src="/static/baby-joe-head-red.png" fetchpriority="high" />
+            <img class="joe-photo" src="/static/baby-joe-head-red.png" alt="Joey" width="300" height="300" fetchpriority="high" />
             <div class="middle-column">
               {movies.map((movie, i) => <MovieCard movie={movie} current={i === 0} key={movie.movieId} />)}
             </div>
-            <img class="joe-photo" src="/static/baby-joe-head-green.png" />
+            <img class="joe-photo" src="/static/baby-joe-head-green.png" alt="" width="300" height="300" />
           </div>
-        </div>
+        </main>
         <script src="/static/client.js"></script>
       </body>
     </html>
