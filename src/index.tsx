@@ -3,7 +3,7 @@ import { html } from 'hono/html';
 import { getCachedMovies, EDGE_CACHE_TTL, type MovieStats } from './tautulli';
 import { logger } from './logger';
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Env }>();
 
 // ── Layout ────────────────────────────────────────────────────────
 

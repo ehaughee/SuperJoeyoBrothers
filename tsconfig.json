@@ -9,7 +9,7 @@
       "ESNext"
     ],
     "types": [
-      "@cloudflare/workers-types",
+      "./worker-configuration.d.ts",
       "vite/client"
     ],
     "jsx": "react-jsx",

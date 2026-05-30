@@ -11,8 +11,8 @@ const config = {
     userId: import.meta.env.VITE_JOEY_USER_ID,
     movieGroups: (import.meta.env.VITE_MOVIE_IDS ?? '')
         .split(',')
-        .map(g => g.split('|').map(s => s.trim()).filter(Boolean))
-        .filter(g => g.length > 0),
+        .map((g: string) => g.split('|').map((s: string) => s.trim()).filter(Boolean))
+        .filter((g: string | any[]) => g.length > 0),
 } as const;
 
 export const EDGE_CACHE_TTL = 60;  // browser/CDN cache for JSON API (seconds)
@@ -61,10 +61,6 @@ export interface MovieStats {
     lastWatched: string;
 }
 
-interface Env {
-    MOVIE_CACHE?: { get(key: string): Promise<string | null>; put(key: string, value: string, opts?: { expirationTtl: number }): Promise<void> };
-}
-
 // ── Raw Tautulli API call ─────────────────────────────────────────
 
 async function call<T = unknown>(cmd: string, params: Record<string, string> = {}): Promise<T> {
@@ -87,7 +83,7 @@ async function call<T = unknown>(cmd: string, params: Record<string, string> = {
 // ── KV-cached API call ────────────────────────────────────────────
 
 async function cachedCall<T = unknown>(
-    kv: Env['MOVIE_CACHE'] | undefined,
+    kv: KVNamespace | undefined,
     cmd: string,
     params: Record<string, string> = {},
 ): Promise<T> {

@@ -4,15 +4,15 @@
     "dev": "vite",
     "build": "vite build",
     "build:minify": "npm run build && esbuild dist/static/client.js dist/static/style.css --minify --outdir=dist/static --allow-overwrite",
+    "types": "wrangler types",
     "preview": "npm run build && wrangler pages dev dist",
-    "deploy": "npm run build:minify && wrangler pages deploy dist",
-    "deploy:preview": "npm run build:minify && wrangler pages deploy dist --branch=preview"
+    "deploy": "npm run types && npm run build:minify && wrangler pages deploy dist",
+    "deploy:preview": "npm run types && npm run build:minify && wrangler pages deploy dist --branch=preview"
   },
   "dependencies": {
     "hono": "^4.12.23"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260530.1",
     "@hono/vite-cloudflare-pages": "^0.4.3",
     "@hono/vite-dev-server": "^0.26.0",
     "@types/node": "^25.9.1",
