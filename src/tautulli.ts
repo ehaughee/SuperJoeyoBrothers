@@ -20,6 +20,7 @@ export interface MovieStats {
     title: string;
     watchCount: string;
     watching: string; // "Yes" | "No"
+    lastWatched: string; // relative time, e.g. "2 hours ago"
 }
 
 // ── Tautulli API helpers ──────────────────────────────────────────
@@ -70,13 +71,37 @@ async function fetchWatching(movieId: string): Promise<string> {
     return 'No';
 }
 
+// Formats a unix-timestamp second as a relative string like "2 hours ago"
+function relativeTime(unixTs: number): string {
+    const diff = Math.floor(Date.now() / 1000) - unixTs;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+    if (diff < 2592000) return `${Math.floor(diff / 86400)} days ago`;
+    return `${Math.floor(diff / 2592000)} months ago`;
+}
+
+async function fetchLastWatched(movieId: string): Promise<string> {
+    const data = await tautulli<any>('get_history', {
+        rating_key: movieId,
+        user_id: config.userId,
+        length: '1',
+    });
+    const items = data?.response?.data?.data ?? data?.response?.data?.history ?? [];
+    if (Array.isArray(items) && items.length > 0) {
+        return relativeTime(items[0].date);
+    }
+    return 'never';
+}
+
 async function fetchMovie(movieId: string): Promise<MovieStats> {
-    const [title, watchCount, watching] = await Promise.all([
+    const [title, watchCount, watching, lastWatched] = await Promise.all([
         fetchTitle(movieId),
         fetchPlays(movieId),
         fetchWatching(movieId),
+        fetchLastWatched(movieId),
     ]);
-    return { movieId, title, watchCount, watching };
+    return { movieId, title, watchCount, watching, lastWatched };
 }
 
 // ── KV cache layer ────────────────────────────────────────────────
@@ -97,7 +122,7 @@ export async function getMovie(movieId: string, env: any): Promise<MovieStats> {
     }
 
     const stats = await fetchMovie(movieId);
-    console.log(`[FETCH] ${movieId} → ${stats.title} (${stats.watchCount} plays, watching: ${stats.watching})`);
+    console.log(`[FETCH] ${movieId} → ${stats.title} (${stats.watchCount} plays, watching: ${stats.watching}, last: ${stats.lastWatched})`);
 
     if (kv) {
         try {

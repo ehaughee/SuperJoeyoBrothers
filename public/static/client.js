@@ -1,23 +1,29 @@
-// Fetches fresh movie stats and updates the page in place.
-// The page already has server-rendered data; this just keeps it current.
+// Fetches fresh movie stats and updates the dynamic values in place.
+// Static text ("Joey watched", "times", etc.) lives in the HTML — only the
+// <span class="dv" data-field="..."> elements get replaced.
 (async () => {
     try {
         const res = await fetch('/api/movies');
         if (!res.ok) return;
 
-        /** @type {Array<{movieId: string, title: string, watchCount: string, watching: string}>} */
+        /** @type {Array<{movieId: string, title: string, watchCount: string, watching: string, lastWatched: string}>} */
         const movies = await res.json();
         for (const m of movies) {
             const card = document.querySelector(`[data-movie-id="${m.movieId}"]`);
             if (!card) continue;
 
-            const title = card.querySelector('[data-role="title"]');
-            const watching = card.querySelector('[data-role="watching"]');
-            if (title) title.textContent = `Joey watched ${m.title} ${m.watchCount} times`;
-            if (watching) watching.textContent = `Is he watching it right now? ${m.watching}`;
+            const title = card.querySelector('[data-field="title"]');
+            const count = card.querySelector('[data-field="count"]');
+            const watching = card.querySelector('[data-field="watching"]');
+            const lastWatched = card.querySelector('[data-field="last-watched"]');
+            if (title) title.textContent = m.title;
+            if (count) count.textContent = m.watchCount;
+            if (watching) watching.textContent = m.watching;
+            if (lastWatched) lastWatched.textContent = m.lastWatched;
         }
-    } catch (_) {
+    } catch (err) {
         // SSR already shows data; silently ignore fetch failures
+        console.error(`failed to fetch movies with error: ${err}`)
     }
 })();
 

@@ -48,6 +48,23 @@ body {
   padding: 1rem;
 }
 
+.dv {
+  color: #f9be03;
+  /* warm gold to highlight dynamic values */
+  font-weight: 600;
+}
+
+/* Card typography — current card is larger */
+.movie-card p {
+  margin: 0.3rem 0;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.movie-card.current p {
+  font-size: 1.4em;
+}
+
 .center {
   text-align: center;
 }
