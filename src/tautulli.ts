@@ -18,7 +18,41 @@ const config = {
 export const EDGE_CACHE_TTL = 60;  // browser/CDN cache for JSON API (seconds)
 const CACHE_TTL = 900;              // KV cache TTL — 15 min keeps writes under 1k/day
 
-/** Fields we care about from the Tautulli API */
+// ── Tautulli API response types ───────────────────────────────────
+
+interface TautulliResponse<T> {
+    response: { result: string; data: T };
+}
+
+interface MetadataPayload {
+    title?: string;
+    full_title?: string;
+    rating_key?: string;
+}
+
+interface UserStatsEntry {
+    user_id: number;
+    total_plays: number;
+}
+
+interface ActivitySession {
+    user_id: string | number;
+    rating_key: string | number;
+}
+
+interface HistoryEntry {
+    date: number;
+    title?: string;
+    rating_key?: string;
+}
+
+interface HistoryPayload {
+    data: HistoryEntry[];
+    history?: HistoryEntry[];
+}
+
+// ── App types ─────────────────────────────────────────────────────
+
 export interface MovieStats {
     movieId: string;
     title: string;
@@ -27,16 +61,20 @@ export interface MovieStats {
     lastWatched: string;
 }
 
+interface Env {
+    MOVIE_CACHE?: { get(key: string): Promise<string | null>; put(key: string, value: string, opts?: { expirationTtl: number }): Promise<void> };
+}
+
 // ── Raw Tautulli API call ─────────────────────────────────────────
 
-async function call(cmd: string, params: Record<string, string> = {}) {
+async function call<T = unknown>(cmd: string, params: Record<string, string> = {}): Promise<T> {
     const start = Date.now();
     const url = new URL(config.baseUrl);
     url.searchParams.set('apikey', config.apiKey);
     url.searchParams.set('cmd', cmd);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
     const res = await fetch(url.toString());
-    const data = await res.json() as any;
+    const data = await res.json() as T;
     logger.info('tautulli_api', {
         cmd,
         status: res.status,
@@ -46,8 +84,13 @@ async function call(cmd: string, params: Record<string, string> = {}) {
     return data;
 }
 
-/** Same as call() but caches the raw response in KV keyed by cmd+params */
-async function cachedCall(kv: any, cmd: string, params: Record<string, string> = {}) {
+// ── KV-cached API call ────────────────────────────────────────────
+
+async function cachedCall<T = unknown>(
+    kv: Env['MOVIE_CACHE'] | undefined,
+    cmd: string,
+    params: Record<string, string> = {},
+): Promise<T> {
     const key = 'tautulli:' + cmd + ':' +
         Object.entries(params).sort().map(([k, v]) => `${k}=${v}`).join(':');
 
@@ -57,28 +100,30 @@ async function cachedCall(kv: any, cmd: string, params: Record<string, string> =
             const cached = await kv.get(key);
             if (cached) {
                 logger.info('cache_hit', { key, kv_read_ms: Date.now() - kvStart });
-                return JSON.parse(cached);
+                return JSON.parse(cached) as T;
             }
             logger.info('cache_miss', { key });
-        } catch (e: any) {
-            logger.error('kv_read_error', { key, error: e?.message });
+        } catch (e: unknown) {
+            logger.error('kv_read_error', { key, error: (e as Error)?.message });
         }
     }
 
-    const data = await call(cmd, params);
+    const data = await call<T>(cmd, params);
 
     if (kv) {
         try {
             await kv.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
-        } catch (e: any) {
-            logger.error('kv_write_error', { key, error: e?.message });
+        } catch (e: unknown) {
+            logger.error('kv_write_error', { key, error: (e as Error)?.message });
         }
     }
 
     return data;
 }
 
-function relativeTime(ts: number) {
+// ── Helpers ───────────────────────────────────────────────────────
+
+function relativeTime(ts: number): string {
     const s = Math.floor(Date.now() / 1000) - ts;
     if (s < 60) return 'just now';
     if (s < 3600) return `${Math.floor(s / 60)}m ago`;
@@ -87,71 +132,75 @@ function relativeTime(ts: number) {
     return `${Math.floor(s / 2592000)}mo ago`;
 }
 
+// ── Main export ───────────────────────────────────────────────────
+
 /** Assemble MovieStats from cached (or fresh) Tautulli API responses.
  *  Each movieGroup is one or more rating_keys for the same film. */
-export async function getCachedMovies(env: any): Promise<MovieStats[]> {
+export async function getCachedMovies(env: Env): Promise<MovieStats[]> {
     const kv = env?.MOVIE_CACHE;
     const uId = Number(config.userId);
 
     const start = Date.now();
-    const movies = await Promise.all(config.movieGroups.map(async (ids: string[]) => {
+    const movies = await Promise.all(config.movieGroups.map(async (ids: string[]): Promise<MovieStats> => {
         const primaryId = ids[0];
         const allIds = ids;
 
         // Metadata: use primary ID
-        const rawMeta = await cachedCall(kv, 'get_metadata', { rating_key: primaryId });
+        const rawMeta = await cachedCall<TautulliResponse<MetadataPayload>>(kv, 'get_metadata', { rating_key: primaryId });
         const meta = rawMeta?.response?.data;
 
         // Activity: check all IDs
-        const activity = await cachedCall(kv, 'get_activity');
+        const activity = await cachedCall<TautulliResponse<{ sessions: ActivitySession[] }>>(kv, 'get_activity');
 
         // Watch count: sum across all IDs
         let totalPlays = 0;
         for (const id of allIds) {
-            const stats = await cachedCall(kv, 'get_item_user_stats', { rating_key: id });
-            const userPlays = stats?.response?.data?.find((u: any) => u?.user_id === uId)?.total_plays ?? 0;
+            const stats = await cachedCall<TautulliResponse<UserStatsEntry[]>>(kv, 'get_item_user_stats', { rating_key: id });
+            const userPlays = stats?.response?.data?.find(u => u.user_id === uId)?.total_plays ?? 0;
             totalPlays += Number(userPlays);
         }
 
         // Last watched: most recent date from any ID (user-filtered first, then unfiltered)
         let latestDate = 0;
         for (const id of allIds) {
-            const hist = await cachedCall(kv, 'get_history', {
+            const hist = await cachedCall<TautulliResponse<HistoryPayload>>(kv, 'get_history', {
                 rating_key: id, user_id: config.userId,
                 length: '1', order_column: 'date', order_dir: 'desc',
             });
-            const d = hist?.response?.data?.data?.[0]?.date ?? hist?.response?.data?.history?.[0]?.date;
-            if (d > latestDate) latestDate = d;
+            const entry = hist?.response?.data?.data?.[0] ?? hist?.response?.data?.history?.[0];
+            if (entry?.date && entry.date > latestDate) latestDate = entry.date;
         }
         // If user-filtered found nothing, try unfiltered across all IDs
         if (latestDate === 0) {
             for (const id of allIds) {
-                const hist = await cachedCall(kv, 'get_history', {
+                const hist = await cachedCall<TautulliResponse<HistoryPayload>>(kv, 'get_history', {
                     rating_key: id, length: '1',
                     order_column: 'date', order_dir: 'desc',
                 });
-                const d = hist?.response?.data?.data?.[0]?.date ?? hist?.response?.data?.history?.[0]?.date;
-                if (d > latestDate) latestDate = d;
+                const entry = hist?.response?.data?.data?.[0] ?? hist?.response?.data?.history?.[0];
+                if (entry?.date && entry.date > latestDate) latestDate = entry.date;
             }
         }
 
         // Title: try metadata first, then history fallback
         let title = meta?.title ?? meta?.full_title;
         if (!title) {
-            const histData = await cachedCall(kv, 'get_history', { rating_key: primaryId, length: '1' });
+            const histData = await cachedCall<TautulliResponse<HistoryPayload>>(kv, 'get_history', { rating_key: primaryId, length: '1' });
             const entry = histData?.response?.data?.data?.[0] ?? histData?.response?.data?.history?.[0];
             title = entry?.title ?? `Movie ${primaryId}`;
         }
 
+        const watching = activity?.response?.data?.sessions?.some(
+            s => String(s.user_id) === String(uId) && allIds.includes(String(s.rating_key)),
+        );
+
         return {
             movieId: primaryId,
-            title,
+            title: title ?? `Movie ${primaryId}`,
             watchCount: String(totalPlays),
-            watching: activity?.response?.data?.sessions?.some(
-                (s: any) => String(s?.user_id) === String(uId) && allIds.includes(String(s?.rating_key))
-            ) ? 'Yes' : 'No',
+            watching: watching ? 'Yes' : 'No',
             lastWatched: latestDate ? relativeTime(latestDate) : 'never',
-        } satisfies MovieStats;
+        };
     }));
     logger.info('movies_loaded', { count: movies.length, duration_ms: Date.now() - start });
     return movies;
