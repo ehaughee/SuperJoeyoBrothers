@@ -25,18 +25,19 @@ function Page({ movies }: { movies: MovieStats[] }) {
   return (
     <html lang="en">
       <head>
-        <link href="/static/style.css" rel="stylesheet" />
+        <style>{`body{font-family:Arial,Helvetica,sans-serif}.container{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:2rem;padding:2rem 1rem}body{background:blue;background:url(/static/mario-bg.webp);background-repeat:no-repeat;background-size:cover}@media(max-width:1250px){.container{flex-direction:column;gap:1rem}}.middle-column{display:flex;flex-direction:column;align-items:stretch;gap:1.5rem;width:min(100%,540px)}.movie-card{width:100%}.text-container{display:flex;flex-direction:column;justify-content:center;background:rgba(75,125,251,.9);color:#f2f2f2;border-radius:1rem;border:solid 1px #f2f2f2;padding:1rem}.dv{color:#f9be03;font-weight:600}.movie-card p{margin:.3rem 0;font-size:1.1em;font-weight:bold}.movie-card.current p{font-size:1.4em}.center{text-align:center}`}</style>
         <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
         <title>Joey Movie Tracker</title>
       </head>
       <body>
         <main class="page-wrapper">
           <div class="container">
-            <img class="joe-photo" src="/static/baby-joe-head-red.png" alt="Joey" width="300" height="300" fetchpriority="high" />
+            <link rel="preload" href="/static/baby-joe-head-red.webp" as="image" />
+            <img class="joe-photo" src="/static/baby-joe-head-red.webp" alt="Joey" width="300" height="300" fetchpriority="high" />
             <div class="middle-column">
               {movies.map((movie, i) => <MovieCard movie={movie} current={i === 0} key={movie.movieId} />)}
             </div>
-            <img class="joe-photo" src="/static/baby-joe-head-green.png" alt="" width="300" height="300" />
+            <img class="joe-photo" src="/static/baby-joe-head-green.webp" alt="" width="300" height="300" />
           </div>
         </main>
         <script src="/static/client.js"></script>

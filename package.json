@@ -15,6 +15,7 @@
     "@hono/vite-cloudflare-pages": "^0.4.3",
     "@hono/vite-dev-server": "^0.26.0",
     "@types/node": "^25.9.1",
+    "sharp": "^0.34.5",
     "vite": "^8.0.14",
     "wrangler": "^4.95.0"
   }

@@ -13,7 +13,7 @@ body {
 
 body {
   background: blue;
-  background: url(/static/mario-bg.png);
+  background: url(/static/mario-bg.webp);
   background-repeat: no-repeat;
   background-size: cover;
 }
