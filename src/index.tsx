@@ -80,7 +80,7 @@ function MovieCard({ movie, current }: { movie: MovieStats; current: boolean }) 
         {current ? (
           <>Is he watching it right now? <span class="dv" data-field="watching">{movie.watching}</span></>
         ) : (
-          <>Last watched <span class="dv" data-field="last-watched">{movie.lastWatched}</span></>
+          <>Last watched <span class="dv" title={new Date(movie.lastWatchedUnix * 1000).toLocaleString()} data-field="last-watched">{movie.lastWatchedRelative}</span></>
         )}
       </p>
     </div>

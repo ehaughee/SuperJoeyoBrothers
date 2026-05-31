@@ -11,12 +11,7 @@ interface LogEntry {
 
 function log(level: LogLevel, message: string, context?: Record<string, unknown>) {
     const entry: LogEntry = { level, message, ...context };
-    switch (level) {
-        case 'debug': console.debug(entry); break;
-        case 'info': console.info(entry); break;
-        case 'warn': console.warn(entry); break;
-        case 'error': console.error(entry); break;
-    }
+    console[level](entry);
 }
 
 export const logger = {

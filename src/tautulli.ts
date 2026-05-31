@@ -58,7 +58,8 @@ export interface MovieStats {
     title: string;
     watchCount: string;
     watching: string;
-    lastWatched: string;
+    lastWatchedRelative: string;
+    lastWatchedUnix: number;
 }
 
 // ── Raw Tautulli API call ─────────────────────────────────────────
@@ -157,24 +158,24 @@ export async function getCachedMovies(env: Env): Promise<MovieStats[]> {
         }
 
         // Last watched: most recent date from any ID (user-filtered first, then unfiltered)
-        let latestDate = 0;
+        let lastWatchedUnixSeconds = 0;
         for (const id of allIds) {
             const hist = await cachedCall<TautulliResponse<HistoryPayload>>(kv, 'get_history', {
                 rating_key: id, user_id: config.userId,
                 length: '1', order_column: 'date', order_dir: 'desc',
             });
             const entry = hist?.response?.data?.data?.[0] ?? hist?.response?.data?.history?.[0];
-            if (entry?.date && entry.date > latestDate) latestDate = entry.date;
+            if (entry?.date && entry.date > lastWatchedUnixSeconds) lastWatchedUnixSeconds = entry.date;
         }
         // If user-filtered found nothing, try unfiltered across all IDs
-        if (latestDate === 0) {
+        if (lastWatchedUnixSeconds === 0) {
             for (const id of allIds) {
                 const hist = await cachedCall<TautulliResponse<HistoryPayload>>(kv, 'get_history', {
                     rating_key: id, length: '1',
                     order_column: 'date', order_dir: 'desc',
                 });
                 const entry = hist?.response?.data?.data?.[0] ?? hist?.response?.data?.history?.[0];
-                if (entry?.date && entry.date > latestDate) latestDate = entry.date;
+                if (entry?.date && entry.date > lastWatchedUnixSeconds) lastWatchedUnixSeconds = entry.date;
             }
         }
 
@@ -195,7 +196,8 @@ export async function getCachedMovies(env: Env): Promise<MovieStats[]> {
             title: title ?? `Movie ${primaryId}`,
             watchCount: String(totalPlays),
             watching: watching ? 'Yes' : 'No',
-            lastWatched: latestDate ? relativeTime(latestDate) : 'never',
+            lastWatchedRelative: lastWatchedUnixSeconds ? relativeTime(lastWatchedUnixSeconds) : 'never',
+            lastWatchedUnix: lastWatchedUnixSeconds,
         };
     }));
     logger.info('movies_loaded', { count: movies.length, duration_ms: Date.now() - start });

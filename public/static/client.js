@@ -3,7 +3,7 @@
 // <span class="dv" data-field="..."> elements get replaced.
 // Polls every 60s for fresh data.
 
-/** @type {Array<{movieId: string, title: string, watchCount: string, watching: string, lastWatched: string}>} */
+/** @type {Array<{movieId: string, title: string, watchCount: string, watching: string, lastWatchedRelative: string, lastWatchedUnix: number}>} */
 let lastMovies = [];
 
 async function updateMovies() {
@@ -22,7 +22,10 @@ async function updateMovies() {
             if (title) title.textContent = m.title;
             if (count) count.textContent = m.watchCount;
             if (watching) watching.textContent = m.watching;
-            if (lastWatched) lastWatched.textContent = m.lastWatched;
+            if (lastWatched) {
+                lastWatched.textContent = m.lastWatchedRelative;
+                if (m.lastWatchedUnix) lastWatched.title = new Date(m.lastWatchedUnix * 1000).toLocaleString();
+            }
         }
     } catch (err) {
         // SSR already shows data; silently ignore fetch failures
