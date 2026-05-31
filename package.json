@@ -7,7 +7,7 @@
     "types": "wrangler types",
     "preview": "npm run types && npm run build && wrangler dev",
     "deploy": "npm run types && npm run build:minify && wrangler deploy",
-    "deploy:preview": "npm run types && npm run build:minify && wrangler deploy --env=preview"
+    "deploy:preview": "npm run types && npm run build:minify && wrangler deploy"
   },
   "dependencies": {
     "hono": "^4.12.23"
