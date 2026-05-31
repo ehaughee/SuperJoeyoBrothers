@@ -14,8 +14,19 @@ id = "f4b61ecb518240eea88d57ca33cece95"
 
 [vars]
 VITE_JOEY_USER_ID = "98743343"
-VITE_MOVIE_IDS = "83162,8789"
+VITE_MOVIE_IDS = "83162,8789|63120"
 
 [observability]
 enabled = true
 head_sampling_rate = 1
+
+[env.preview]
+name = "superjoeyobrothers-preview"
+
+[env.preview.vars]
+VITE_JOEY_USER_ID = "98743343"
+VITE_MOVIE_IDS = "83162,8789|63120"
+
+[[env.preview.kv_namespaces]]
+binding = "MOVIE_CACHE"
+id = "f4b61ecb518240eea88d57ca33cece95"
