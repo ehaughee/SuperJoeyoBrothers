@@ -5,9 +5,9 @@
     "build": "vite build",
     "build:minify": "npm run build && esbuild dist/static/client.js dist/static/style.css --minify --outdir=dist/static --allow-overwrite",
     "types": "wrangler types",
-    "preview": "npm run types && npm run build && wrangler pages dev dist",
-    "deploy": "npm run build:minify && wrangler pages deploy dist",
-    "deploy:preview": "npm run build:minify && wrangler pages deploy dist --branch=preview"
+    "preview": "npm run types && npm run build && wrangler dev",
+    "deploy": "npm run types && npm run build:minify && wrangler deploy",
+    "deploy:preview": "npm run types && npm run build:minify && wrangler deploy --env=preview"
   },
   "dependencies": {
     "hono": "^4.12.23"
